@@ -57,5 +57,33 @@ namespace WebApiThrottle.Net
 
         }
 
+        public static string GetClientIpAddress(this HttpRequestBase request)
+        {
+            string remoteAddress = request.UserHostAddress;
+            string forwardedFor = request.ServerVariables["X_FORWARDED_FOR"];
+            string ipAddress = "";
+
+            if (forwardedFor == null)
+            {
+                ipAddress = remoteAddress;
+            }
+            else
+            {
+                ipAddress = forwardedFor;
+                if (ipAddress.IndexOf(",") > 0)
+                {
+                    string[] ips = ipAddress.Split(',');
+
+                    foreach (string ip in ips)
+                    {
+                        if (!IpAddressUtil.IsPrivateIpAddress(ip))
+                        {
+                            return ip;
+                        }
+                    }
+                }
+            }
+            return ipAddress;
+        }
     }
 }

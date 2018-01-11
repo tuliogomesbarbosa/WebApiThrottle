@@ -49,18 +49,10 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
-    </Reference>
     <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Channels" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -68,7 +60,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Attributes\DisableThrottingAttribute.cs" />
+    <Compile Include="HttpModuleThrottlingHandler.cs" />
     <Compile Include="Net\DefaultIpAddressParser.cs" />
     <Compile Include="Net\HttpRequestExtensions.cs" />
     <Compile Include="Net\IIpAddressParser.cs" />
@@ -88,7 +80,6 @@
     <Compile Include="Models\RateLimits.cs" />
     <Compile Include="Models\ThrottleCounter.cs" />
     <Compile Include="Logging\ThrottleLogEntry.cs" />
-    <Compile Include="Attributes\EnableThrottlingAttribute.cs" />
     <Compile Include="ThrottlingMiddleware.cs" />
     <Compile Include="ThrottleManager.cs" />
     <Compile Include="ThrottlePolicy.cs" />
@@ -104,9 +95,6 @@
     <Compile Include="Configuration\ThrottlePolicyWhitelistConfigurationCollection.cs" />
     <Compile Include="Configuration\ThrottlePolicyWhitelistConfigurationElement.cs" />
     <Compile Include="ThrottlingCore.cs" />
-    <Compile Include="ThrottlingFilter.cs" />
-    <Compile Include="ThrottlingHandler.cs" />
-    <Compile Include="Logging\TracingThrottleLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

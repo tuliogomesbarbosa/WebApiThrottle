@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Web;
 
 namespace WebApiThrottle.Net
 {
@@ -11,6 +12,8 @@ namespace WebApiThrottle.Net
         bool ContainsIp(List<string> ipRules, string clientIp, out string rule);
 
         IPAddress GetClientIp(HttpRequestMessage request);
+
+        IPAddress GetClientIp(HttpRequestBase request);
 
         IPAddress ParseIp(string ipAddress);
     }

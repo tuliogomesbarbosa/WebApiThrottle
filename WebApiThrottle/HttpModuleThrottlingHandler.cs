@@ -1,68 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.ServiceModel.Channels;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using WebApiThrottle.Net;
 
 namespace WebApiThrottle
 {
-    /// <summary>
-    /// Throttle message handler
-    /// </summary>
-    public class ThrottlingHandler : DelegatingHandler
+    public class HttpModuleThrottlingHandler
     {
         private ThrottlingCore core;
         private IPolicyRepository policyRepository;
         private ThrottlePolicy policy;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ThrottlingHandler"/> class. 
-        /// By default, the <see cref="QuotaExceededResponseCode"/> property 
-        /// is set to 429 (Too Many Requests).
-        /// </summary>
-        public ThrottlingHandler()
+        public HttpModuleThrottlingHandler()
         {
             QuotaExceededResponseCode = (HttpStatusCode)429;
             Repository = new CacheRepository();
             core = new ThrottlingCore();
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ThrottlingHandler"/> class.
-        /// Persists the policy object in cache using <see cref="IPolicyRepository"/> implementation.
-        /// The policy object can be updated by <see cref="ThrottleManager"/> at runtime. 
-        /// </summary>
-        /// <param name="policy">
-        /// The policy.
-        /// </param>
-        /// <param name="policyRepository">
-        /// The policy repository.
-        /// </param>
-        /// <param name="repository">
-        /// The repository.
-        /// </param>
-        /// <param name="logger">
-        /// The logger.
-        /// </param>
-        /// <param name="ipAddressParser">
-        /// The IpAddressParser
-        /// </param>
-        public ThrottlingHandler(ThrottlePolicy policy, 
-            IPolicyRepository policyRepository, 
-            IThrottleRepository repository, 
-            IThrottleLogger logger,
+        public HttpModuleThrottlingHandler(ThrottlePolicy policy,
+            IPolicyRepository policyRepository,
+            IThrottleRepository repository,
             IIpAddressParser ipAddressParser = null)
         {
             core = new ThrottlingCore();
             core.Repository = repository;
             Repository = repository;
-            Logger = logger;
 
             if (ipAddressParser != null)
             {
@@ -129,8 +98,11 @@ namespace WebApiThrottle
         /// </summary>
         public HttpStatusCode QuotaExceededResponseCode { get; set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public void OnEvent(HttpContextBase context)
         {
+            HttpRequestBase request = context.Request;
+            HttpResponseBase response = context.Response;
+
             // get policy from repo
             if (policyRepository != null)
             {
@@ -139,7 +111,8 @@ namespace WebApiThrottle
 
             if (policy == null || (!policy.IpThrottling && !policy.ClientThrottling && !policy.EndpointThrottling))
             {
-                return base.SendAsync(request, cancellationToken);
+                response.StatusCode = (int)HttpStatusCode.OK;
+                return;
             }
 
             core.Repository = Repository;
@@ -149,7 +122,17 @@ namespace WebApiThrottle
 
             if (core.IsWhitelisted(identity))
             {
-                return base.SendAsync(request, cancellationToken);
+                response.StatusCode = (int)HttpStatusCode.OK;
+                return;
+            }
+
+            if(policy.Endpoints != null && policy.Endpoints.Count > 0)
+            {
+                if (!core.IsEndpointMonitored(identity))
+                {
+                    response.StatusCode = (int)HttpStatusCode.OK;
+                    return;
+                }
             }
 
             TimeSpan timeSpan = TimeSpan.FromSeconds(1);
@@ -195,8 +178,8 @@ namespace WebApiThrottle
                             Logger.Log(core.ComputeLogEntry(requestId, identity, throttleCounter, rateLimitPeriod.ToString(), rateLimit, request));
                         }
 
-                        var message = !string.IsNullOrEmpty(this.QuotaExceededMessage) 
-                            ? this.QuotaExceededMessage 
+                        var message = !string.IsNullOrEmpty(this.QuotaExceededMessage)
+                            ? this.QuotaExceededMessage
                             : "API calls quota exceeded! maximum admitted {0} per {1}.";
 
                         var content = this.QuotaExceededContent != null
@@ -204,46 +187,76 @@ namespace WebApiThrottle
                             : string.Format(message, rateLimit, rateLimitPeriod);
 
                         // break execution
-                        return QuotaExceededResponse(
-                            request,
-                            content,
-                            QuotaExceededResponseCode,
-                            core.RetryAfterFrom(throttleCounter.Timestamp, rateLimitPeriod));
+                        response.StatusCode = (int)QuotaExceededResponseCode;
+                        response.AddHeader("Retry-After", core.RetryAfterFrom(throttleCounter.Timestamp, rateLimitPeriod));
+                        response.Write(content);
+                        return;
                     }
                 }
             }
 
             // no throttling required
-            return base.SendAsync(request, cancellationToken);
+            response.StatusCode = (int)HttpStatusCode.OK;
+            return;
         }
 
-        protected IPAddress GetClientIp(HttpRequestMessage request)
+        private HttpRequestMessage HttpRequestBaseToHttpRequestMessage(HttpRequestBase request)
         {
-            return core.GetClientIp(request);
+            var httpRequest = new HttpRequestMessage(new HttpMethod(request.HttpMethod), request.Url);
+
+            CopyHeaders(httpRequest, request);
+
+            if (request.Form != null)
+            {
+                // Avoid a request message that will try to read the request stream twice for already parsed data.
+                httpRequest.Content = new FormUrlEncodedContent(GetEnumerableForm(request.Form));
+            }
+            else if (request.InputStream != null)
+            {
+                httpRequest.Content = new StreamContent(request.InputStream);
+            }
+
+            return httpRequest;
         }
 
-        protected virtual RequestIdentity SetIdentity(HttpRequestMessage request)
+        private IEnumerable<KeyValuePair<string, string>> GetEnumerableForm(NameValueCollection form)
         {
-            var entry = new RequestIdentity();
-            entry.ClientIp = core.GetClientIp(request).ToString();
-            entry.Endpoint = request.RequestUri.AbsolutePath.ToLowerInvariant();
-            entry.ClientKey = request.Headers.Contains("Authorization-Token") 
-                ? request.Headers.GetValues("Authorization-Token").First() 
-                : "anon";
+            return form.Cast<string>().Select(key => new KeyValuePair<string, string>(key, form[key]));
+        }
 
-            return entry;
+        private void CopyHeaders(HttpRequestMessage message, HttpRequestBase request)
+        {
+            foreach (string headerName in request.Headers)
+            {
+                string[] headerValues = request.Headers.GetValues(headerName);
+                if (!message.Headers.TryAddWithoutValidation(headerName, headerValues))
+                {
+                    message.Content.Headers.TryAddWithoutValidation(headerName, headerValues);
+                }
+            }
+        }
+
+        protected virtual RequestIdentity SetIdentity(HttpRequestBase request)
+        {
+            string cookieCav = null;
+
+            if (request.Cookies.Count > 0 && request.Cookies["COOKIECAV"] != null)
+            {
+                HttpCookie cookie = request.Cookies["COOKIECAV"];
+                cookieCav = cookie.Value;
+            }
+
+            return new RequestIdentity
+            {
+                ClientIp = core.GetClientIp(request).ToString(),
+                Endpoint = request.Url.AbsolutePath,
+                ClientKey = cookieCav ?? "anon"
+            };
         }
 
         protected virtual string ComputeThrottleKey(RequestIdentity requestIdentity, RateLimitPeriod period)
         {
             return core.ComputeThrottleKey(requestIdentity, period);
-        }
-
-        protected virtual Task<HttpResponseMessage> QuotaExceededResponse(HttpRequestMessage request, object content, HttpStatusCode responseCode, string retryAfter)
-        {
-            var response = request.CreateResponse(responseCode, content);
-            response.Headers.Add("Retry-After", new string[] { retryAfter });
-            return Task.FromResult(response);
         }
     }
 }

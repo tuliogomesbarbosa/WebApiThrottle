@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
+using System.Web;
 
 namespace WebApiThrottle
 {
@@ -28,6 +24,6 @@ namespace WebApiThrottle
 
         public DateTime LogDate { get; set; }
 
-        public HttpRequestMessage Request { get; set; }
+        public HttpRequestBase Request { get; set; }
     }
 }

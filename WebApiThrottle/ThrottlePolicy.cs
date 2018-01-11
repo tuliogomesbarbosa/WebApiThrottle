@@ -20,6 +20,7 @@ namespace WebApiThrottle
             ClientRules = new Dictionary<string, RateLimits>();
             EndpointWhitelist = new List<string>();
             EndpointRules = new Dictionary<string, RateLimits>();
+            Endpoints = new List<string>();
             Rates = new Dictionary<RateLimitPeriod, long>();
         }
 
@@ -83,6 +84,8 @@ namespace WebApiThrottle
         public List<string> EndpointWhitelist { get; set; }
 
         public IDictionary<string, RateLimits> EndpointRules { get; set; }
+
+        public List<string> Endpoints { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether all requests, including the rejected ones, should be stacked in this order: day, hour, min, sec

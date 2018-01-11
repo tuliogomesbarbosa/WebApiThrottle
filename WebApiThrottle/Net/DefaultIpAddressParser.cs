@@ -23,6 +23,11 @@ namespace WebApiThrottle.Net
             return ParseIp(request.GetClientIpAddress());
         }
 
+        public IPAddress GetClientIp(HttpRequestBase request)
+        {
+            return ParseIp(request.GetClientIpAddress());
+        }
+
         public IPAddress ParseIp(string ipAddress)
         {
             return IpAddressUtil.ParseIp(ipAddress);

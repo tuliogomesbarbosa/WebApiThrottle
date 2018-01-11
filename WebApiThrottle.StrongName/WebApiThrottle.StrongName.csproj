@@ -72,7 +72,39 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="../WebApiThrottle/**/*.cs" Exclude="../WebApiThrottle/obj/**/*.*;../WebApiThrottle/**/AssemblyInfo.cs" />
+    <Compile Include="../WebApiThrottle/Configuration\ThrottlePolicyConfiguration.cs" />
+    <Compile Include="../WebApiThrottle/Configuration\ThrottlePolicyRuleConfigurationCollection.cs" />
+    <Compile Include="../WebApiThrottle/Configuration\ThrottlePolicyRuleConfigurationElement.cs" />
+    <Compile Include="../WebApiThrottle/Configuration\ThrottlePolicyWhitelistConfigurationCollection.cs" />
+    <Compile Include="../WebApiThrottle/Configuration\ThrottlePolicyWhitelistConfigurationElement.cs" />
+    <Compile Include="../WebApiThrottle/HttpModuleThrottlingHandler.cs" />
+	<Compile Include="../WebApiThrottle/Logging/IThrottleLogger.cs" />
+	<Compile Include="../WebApiThrottle/Logging/ThrottleLogEntry.cs" />
+    <Compile Include="../WebApiThrottle/Models\IPAddressRange.cs" />
+    <Compile Include="../WebApiThrottle/Models\RateLimitPeriod.cs" />
+    <Compile Include="../WebApiThrottle/Models\RateLimits.cs" />
+    <Compile Include="../WebApiThrottle/Models\RequestIdentity.cs" />
+    <Compile Include="../WebApiThrottle/Models\ThrottleCounter.cs" />
+    <Compile Include="../WebApiThrottle/Models\ThrottlePolicyRule.cs" />
+    <Compile Include="../WebApiThrottle/Models\ThrottlePolicySettings.cs" />
+    <Compile Include="../WebApiThrottle/Models\ThrottlePolicyType.cs" />
+    <Compile Include="../WebApiThrottle/Models\ThrottlePolicyWhitelist.cs" />
+    <Compile Include="../WebApiThrottle/Net\DefaultIpAddressParser.cs" />
+    <Compile Include="../WebApiThrottle/Net\HttpRequestExtensions.cs" />
+    <Compile Include="../WebApiThrottle/Net\IIpAddressParser.cs" />
+    <Compile Include="../WebApiThrottle/Net\IpAddressUtil.cs" />
+    <Compile Include="../WebApiThrottle/Providers\IThrottlePolicyProvider.cs" />
+    <Compile Include="../WebApiThrottle/Providers\PolicyConfigurationProvider.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\CacheRepository.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\ConcurrentDictionaryRepository.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\IPolicyRepository.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\IThrottleRepository.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\MemoryCacheRepository.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\PolicyCacheRepository.cs" />
+    <Compile Include="../WebApiThrottle/Repositories\PolicyMemoryCacheRepository.cs" />
+    <Compile Include="../WebApiThrottle/ThrottleManager.cs" />
+    <Compile Include="../WebApiThrottle/ThrottlePolicy.cs" />
+    <Compile Include="../WebApiThrottle/ThrottlingCore.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="WebApiThrottle.snk" />

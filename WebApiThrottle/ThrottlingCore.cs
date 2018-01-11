@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 using WebApiThrottle.Net;
 
 namespace WebApiThrottle
@@ -41,7 +43,12 @@ namespace WebApiThrottle
             return IpAddressParser.GetClientIp(request);
         }
 
-        internal ThrottleLogEntry ComputeLogEntry(string requestId, RequestIdentity identity, ThrottleCounter throttleCounter, string rateLimitPeriod, long rateLimit, HttpRequestMessage request)
+        internal IPAddress GetClientIp(HttpRequestBase request)
+        {
+            return IpAddressParser.GetClientIp(request);
+        }
+
+        internal ThrottleLogEntry ComputeLogEntry(string requestId, RequestIdentity identity, ThrottleCounter throttleCounter, string rateLimitPeriod, long rateLimit, HttpRequestBase request)
         {
             return new ThrottleLogEntry
             {
@@ -252,6 +259,8 @@ namespace WebApiThrottle
             if (Policy.EndpointRules != null)
             {
                 var rules = Policy.EndpointRules.Where(x => identity.Endpoint.IndexOf(x.Key, 0, StringComparison.InvariantCultureIgnoreCase) != -1).ToList();
+                //var rules = Policy.EndpointRules.Where(x => Regex.IsMatch(identity.Endpoint, x.Key, RegexOptions.IgnoreCase)).ToList();
+
                 if (rules.Any())
                 {
                     // get the lower limit from all applying rules
@@ -284,6 +293,12 @@ namespace WebApiThrottle
                     rateLimit = limit;
                 }
             }
+        }
+
+        internal bool IsEndpointMonitored(RequestIdentity identity)
+        {
+            var endpoints = Policy.Endpoints.Where(x => Regex.IsMatch(identity.Endpoint, x, RegexOptions.IgnoreCase)).ToList();
+            return endpoints.Any();
         }
     }
 }
